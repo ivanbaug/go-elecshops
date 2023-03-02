@@ -23,6 +23,12 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	r.POST("/add-product", AddProduct)
 
 	r.GET("/get-products", GetProducts)
+	// stores
+	r.GET("/get-stores", GetStores)
+	r.GET("/get-store/:id", GetStore)
+	r.POST("/add-store", AddStore)
+	r.PATCH("/update-store/:id", UpdateStore)
+	r.DELETE("/delete-store/:id", DeleteStore)
 
 	return r
 }
