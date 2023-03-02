@@ -1,11 +1,10 @@
 package routes
 
 import (
+	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/ivanbaug/go-eshops/internal/models"
-	"log"
 	"strconv"
-	"strings"
 )
 
 type qParam struct {
@@ -39,9 +38,15 @@ func GetStores(c *gin.Context) {
 
 	rows, err := db.SQL.Query("SELECT * FROM store "+qWhere, args...)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+		}
+	}(rows)
 
 	for rows.Next() {
 		var s models.Store
@@ -55,26 +60,14 @@ func GetStores(c *gin.Context) {
 	c.JSON(200, stores)
 }
 
-func obtainQueryArgs(params []qParam) ([]interface{}, string) {
-	var args []interface{}
-	var strs []string
-	for i, p := range params {
-		args = append(args, p.Value)
-		strs = append(strs, p.Name+" = $"+strconv.Itoa(i+1))
-	}
-
-	qWhere := " WHERE " + strings.Join(strs, " AND ")
-
-	return args, qWhere
-}
-
 func GetStore(c *gin.Context) {
 	var s models.Store
 	id := c.Param("id")
 
 	err := db.SQL.QueryRow("SELECT * FROM store WHERE id = $1", id).Scan(&s.ID, &s.Name, &s.Url, &s.Country, &s.Region, &s.BadPingCount)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(200, s)
 }
@@ -84,7 +77,11 @@ func AddStore(c *gin.Context) {
 	var s models.Store
 	var newStore models.Store
 	var params []qParam
-	c.BindJSON(&s)
+	err := c.BindJSON(&s)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	if s.Name == "" || s.Url == "" {
 		c.JSON(400, gin.H{"error": "Name and URL are required"})
@@ -105,39 +102,24 @@ func AddStore(c *gin.Context) {
 
 	query := "INSERT INTO store (" + cols + ") VALUES (" + nums + ") RETURNING *"
 
-	err := db.SQL.QueryRow(query, args...).Scan(&newStore.ID, &newStore.Name, &newStore.Url, &newStore.Country,
+	err = db.SQL.QueryRow(query, args...).Scan(&newStore.ID, &newStore.Name, &newStore.Url, &newStore.Country,
 		&newStore.Region, &newStore.BadPingCount)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
+
 	c.JSON(200, newStore)
-}
-
-func obtainInsertArgs(params []qParam) (string, string, []interface{}) {
-	var args []interface{}
-	var str_c []string
-	var str_n []string
-
-	for i, p := range params {
-		str_c = append(str_c, p.Name)
-		str_n = append(str_n, "$"+strconv.Itoa(i+1))
-		args = append(args, p.Value)
-	}
-
-	cols := strings.Join(str_c, ", ")
-	nums := strings.Join(str_n, ", ")
-
-	return cols, nums, args
 }
 
 func UpdateStore(c *gin.Context) {
 	sid := c.Param("id")
 	id, err := strconv.Atoi(sid)
+
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Received ID is not a number"})
 		return
 	}
-
 	if id <= 0 {
 		c.JSON(400, gin.H{"error": "Wrong ID"})
 		return
@@ -146,7 +128,11 @@ func UpdateStore(c *gin.Context) {
 	var s models.Store
 	var updStore models.Store
 	var params []qParam
-	c.BindJSON(&s)
+	err = c.BindJSON(&s)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	if s.Name != "" {
 		params = append(params, qParam{"name", s.Name})
@@ -174,40 +160,26 @@ func UpdateStore(c *gin.Context) {
 	err = db.SQL.QueryRow(query, args...).Scan(&updStore.ID, &updStore.Name, &updStore.Url, &updStore.Country,
 		&updStore.Region, &updStore.BadPingCount)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(200, updStore)
 
 }
 
-func obtainUpdateArgs(params []qParam) (string, []interface{}) {
-	var args []interface{}
-	var str_c []string
-
-	for i, p := range params {
-		str_c = append(str_c, p.Name+" = $"+strconv.Itoa(i+1))
-		args = append(args, p.Value)
-	}
-
-	cols := strings.Join(str_c, ", ")
-
-	return cols, args
-}
-
 func DeleteStore(c *gin.Context) {
 	sid := c.Param("id")
 	id, err := strconv.Atoi(sid)
+
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Received ID is not a number"})
 		return
 	}
-
 	if id <= 0 {
 		c.JSON(400, gin.H{"error": "Wrong ID"})
 		return
 	}
-
 	_, err = db.SQL.Exec("DELETE FROM store WHERE id = $1", id)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
