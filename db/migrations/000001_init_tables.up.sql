@@ -19,7 +19,8 @@ CREATE TABLE "product"(
                           "id_store" BIGINT NOT NULL,
                           "last_update" TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           "first_update" TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                          "num_updates" BIGINT NOT NULL DEFAULT 0
+                          "num_updates" BIGINT NOT NULL DEFAULT 0,
+                          "url" VARCHAR(255) NULL
                       );
 ALTER TABLE
     "product" ADD PRIMARY KEY("id");

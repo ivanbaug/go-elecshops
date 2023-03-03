@@ -9,6 +9,12 @@ import (
 
 var db *dbdriver.DB
 
+type qParam struct {
+	Name    string
+	Value   string
+	Precise bool
+}
+
 func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	// Set db variable to the one passed in
 	db = rdb
@@ -22,9 +28,6 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 		})
 	})
 
-	r.POST("/add-product", AddProduct)
-
-	r.GET("/get-products", GetProducts)
 	// stores
 	r.GET("/get-stores", GetStores)
 	r.GET("/get-store/:id", GetStore)
@@ -32,17 +35,35 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	r.PATCH("/update-store/:id", UpdateStore)
 	r.DELETE("/delete-store/:id", DeleteStore)
 
+	// products
+	r.GET("/get-products", GetProducts)
+	r.GET("/get-product/:id", GetProduct)
+	r.POST("/add-product", AddProduct)
+	r.PATCH("/update-product/:id", UpdateProduct)
+	r.DELETE("/delete-product/:id", DeleteProduct)
+
+	// TODO: Add routes by grouping their functions
+	// TODO: Authorization for protected routes
+
 	return r
 }
 
-// Helper functions
+// Helper functions, types
+
+func newQParam(name string, value string) qParam {
+	return qParam{name, value, true}
+}
 
 func obtainQueryArgs(params []qParam) ([]interface{}, string) {
 	var args []interface{}
 	var strs []string
 	for i, p := range params {
 		args = append(args, p.Value)
-		strs = append(strs, p.Name+" = $"+strconv.Itoa(i+1))
+		if p.Precise {
+			strs = append(strs, p.Name+" = $"+strconv.Itoa(i+1))
+		} else {
+			strs = append(strs, p.Name+" LIKE '%' || $"+strconv.Itoa(i+1)+" || '%'")
+		}
 	}
 
 	qWhere := " WHERE " + strings.Join(strs, " AND ")

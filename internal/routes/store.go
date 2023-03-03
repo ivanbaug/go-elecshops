@@ -7,11 +7,6 @@ import (
 	"strconv"
 )
 
-type qParam struct {
-	Name  string
-	Value string
-}
-
 func GetStores(c *gin.Context) {
 	var stores []models.Store
 	var params []qParam
@@ -23,13 +18,19 @@ func GetStores(c *gin.Context) {
 	storeRegion := c.Query("region")
 
 	if storeName != "" {
-		params = append(params, qParam{"'name'", storeName})
+		p := newQParam("name", storeName)
+		p.Precise = false
+		params = append(params, p)
 	}
 	if storeCountry != "" {
-		params = append(params, qParam{"country", storeCountry})
+		p := newQParam("country", storeCountry)
+		p.Precise = false
+		params = append(params, p)
 	}
 	if storeRegion != "" {
-		params = append(params, qParam{"region", storeRegion})
+		p := newQParam("region", storeRegion)
+		p.Precise = false
+		params = append(params, p)
 	}
 
 	if len(params) > 0 {
@@ -57,6 +58,7 @@ func GetStores(c *gin.Context) {
 		}
 		stores = append(stores, s)
 	}
+
 	c.JSON(200, stores)
 }
 
@@ -88,14 +90,14 @@ func AddStore(c *gin.Context) {
 		return
 	}
 
-	params = append(params, qParam{"name", s.Name})
-	params = append(params, qParam{"url", s.Url})
+	params = append(params, newQParam("name", s.Name))
+	params = append(params, newQParam("url", s.Url))
 
 	if s.Country != "" {
-		params = append(params, qParam{"country", s.Country})
+		params = append(params, newQParam("country", s.Country))
 	}
 	if s.Region != "" {
-		params = append(params, qParam{"region", s.Region})
+		params = append(params, newQParam("region", s.Region))
 	}
 
 	cols, nums, args := obtainInsertArgs(params)
@@ -135,16 +137,16 @@ func UpdateStore(c *gin.Context) {
 	}
 
 	if s.Name != "" {
-		params = append(params, qParam{"name", s.Name})
+		params = append(params, newQParam("name", s.Name))
 	}
 	if s.Url != "" {
-		params = append(params, qParam{"url", s.Url})
+		params = append(params, newQParam("url", s.Url))
 	}
 	if s.Country != "" {
-		params = append(params, qParam{"country", s.Country})
+		params = append(params, newQParam("country", s.Country))
 	}
 	if s.Region != "" {
-		params = append(params, qParam{"region", s.Region})
+		params = append(params, newQParam("region", s.Region))
 	}
 
 	if len(params) == 0 {

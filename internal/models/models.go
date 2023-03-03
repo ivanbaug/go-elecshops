@@ -8,12 +8,13 @@ type Product struct {
 	Description        string    `json:"description"`
 	Vendor             string    `json:"vendor"`
 	Stock              int64     `json:"stock"`
-	Price              int64     `json:"price"`
+	Price              float64   `json:"price"`
 	TimesClickedUpdate int64     `json:"times_clicked_update"`
 	IdStore            int64     `json:"id_store"`
 	LastUpdate         time.Time `json:"last_update"`
 	FirstUpdate        time.Time `json:"first_update"`
 	NumUpdates         int64     `json:"num_updates"`
+	Url                string    `json:"url"`
 }
 
 type Store struct {
@@ -24,3 +25,6 @@ type Store struct {
 	Region       string `json:"region"`
 	BadPingCount int64  `json:"bad_ping_count"`
 }
+
+// TODO: Lowercase indexes for faster search https://stackoverflow.com/questions/3980050/how-do-i-create-an-index-in-postgresql-based-on-lowercase-only
+// TODO: probably a view with all the info
