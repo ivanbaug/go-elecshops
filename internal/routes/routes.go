@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivanbaug/go-eshops/internal/dbdriver"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -21,29 +22,37 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 
 	r := gin.Default()
 
-	// Ping test
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
-	// stores
-	r.GET("/get-stores", GetStores)
-	r.GET("/get-store/:id", GetStore)
-	r.POST("/add-store", AddStore)
-	r.PATCH("/update-store/:id", UpdateStore)
-	r.DELETE("/delete-store/:id", DeleteStore)
+	// Stores
+	rStores := r.Group("/stores")
+	{
+		rStores.GET("/", GetStores)
+		rStores.GET("/:id", GetStore)
+	}
 
 	// products
-	r.GET("/get-products", GetProducts)
-	r.GET("/get-product/:id", GetProduct)
-	r.POST("/add-product", AddProduct)
-	r.PATCH("/update-product/:id", UpdateProduct)
-	r.DELETE("/delete-product/:id", DeleteProduct)
+	rProducts := r.Group("/products")
+	{
+		rProducts.GET("/", GetProducts)
+		rProducts.GET("/:id", GetProduct)
+	}
 
-	// TODO: Add routes by grouping their functions
-	// TODO: Authorization for protected routes
+	// protected
+	rProtected := r.Group("/p")
+	rProtected.Use(simpleAuthMiddleware())
+	{
+		pgStores := rProtected.Group("/stores")
+		{
+			pgStores.POST("/", AddStore)
+			pgStores.PATCH("/:id", UpdateStore)
+			pgStores.DELETE("/:id", DeleteStore)
+		}
+		pgProducts := rProtected.Group("/products")
+		{
+			pgProducts.POST("/", AddProduct)
+			pgProducts.PATCH("/:id", UpdateProduct)
+			pgProducts.DELETE("/:id", DeleteProduct)
+		}
+	}
 
 	return r
 }
@@ -100,4 +109,28 @@ func obtainUpdateArgs(params []qParam) (string, []interface{}) {
 	cols := strings.Join(strC, ", ")
 
 	return cols, args
+}
+
+// unsafe, probably
+func simpleTokenValidator(c *gin.Context) bool {
+	bearerToken := c.Request.Header.Get("Authorization")
+	tkn := ""
+	if len(strings.Split(bearerToken, " ")) == 2 {
+		tkn = strings.Split(bearerToken, " ")[1]
+	}
+	validTkn := os.Getenv("API_KEY")
+	if tkn == validTkn {
+		return true
+	}
+	return false
+}
+
+func simpleAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !simpleTokenValidator(c) {
+			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+		c.Next()
+	}
 }
