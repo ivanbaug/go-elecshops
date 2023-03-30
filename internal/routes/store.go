@@ -51,7 +51,7 @@ func GetStores(c *gin.Context) {
 
 	for rows.Next() {
 		var s models.Store
-		err := rows.Scan(&s.ID, &s.Name, &s.Url, &s.Country, &s.Region, &s.BadPingCount)
+		err := rows.Scan(&s.ID, &s.Name, &s.Url, &s.Country, &s.Region, &s.BadPingCount, &s.LastUpdate)
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error(), "row_id": s.ID})
 			return
@@ -66,7 +66,7 @@ func GetStore(c *gin.Context) {
 	var s models.Store
 	id := c.Param("id")
 
-	err := db.SQL.QueryRow("SELECT * FROM store WHERE id = $1", id).Scan(&s.ID, &s.Name, &s.Url, &s.Country, &s.Region, &s.BadPingCount)
+	err := db.SQL.QueryRow("SELECT * FROM store WHERE id = $1", id).Scan(&s.ID, &s.Name, &s.Url, &s.Country, &s.Region, &s.BadPingCount, &s.LastUpdate)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -105,7 +105,7 @@ func AddStore(c *gin.Context) {
 	query := "INSERT INTO store (" + cols + ") VALUES (" + nums + ") RETURNING *"
 
 	err = db.SQL.QueryRow(query, args...).Scan(&newStore.ID, &newStore.Name, &newStore.Url, &newStore.Country,
-		&newStore.Region, &newStore.BadPingCount)
+		&newStore.Region, &newStore.BadPingCount, &newStore.LastUpdate)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -148,6 +148,9 @@ func UpdateStore(c *gin.Context) {
 	if s.Region != "" {
 		params = append(params, newQParam("region", s.Region))
 	}
+	if !s.LastUpdate.IsZero() {
+		params = append(params, newQParam("last_update", s.LastUpdate.String()))
+	}
 
 	if len(params) == 0 {
 		c.JSON(400, gin.H{"error": "Nothing to update"})
@@ -160,7 +163,7 @@ func UpdateStore(c *gin.Context) {
 	query := "UPDATE store SET " + cols + " WHERE id = $" + strconv.Itoa(len(params)+1) + " RETURNING *"
 
 	err = db.SQL.QueryRow(query, args...).Scan(&updStore.ID, &updStore.Name, &updStore.Url, &updStore.Country,
-		&updStore.Region, &updStore.BadPingCount)
+		&updStore.Region, &updStore.BadPingCount, &updStore.LastUpdate)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

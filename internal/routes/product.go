@@ -16,6 +16,8 @@ func GetProducts(c *gin.Context) {
 	productSku := c.Query("sku")
 	productDescription := c.Query("description")
 	productVendor := c.Query("vendor")
+	productUrl := c.Query("url")
+	productIdStore := c.Query("id_store")
 
 	if productSku != "" {
 		p := newQParam("sku", productSku)
@@ -30,6 +32,14 @@ func GetProducts(c *gin.Context) {
 	if productVendor != "" {
 		p := newQParam("vendor", productVendor)
 		p.Precise = false
+		params = append(params, p)
+	}
+	if productUrl != "" {
+		p := newQParam("url", productUrl)
+		params = append(params, p)
+	}
+	if productIdStore != "" {
+		p := newQParam("id_store", productIdStore)
 		params = append(params, p)
 	}
 
@@ -76,6 +86,7 @@ func GetProduct(c *gin.Context) {
 	}
 	c.JSON(200, p)
 }
+
 func AddProduct(c *gin.Context) {
 	var p models.Product
 	var newProduct models.Product

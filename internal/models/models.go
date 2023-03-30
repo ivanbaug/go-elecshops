@@ -18,12 +18,13 @@ type Product struct {
 }
 
 type Store struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Url          string `json:"url"`
-	Country      string `json:"country"`
-	Region       string `json:"region"`
-	BadPingCount int64  `json:"bad_ping_count"`
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Url          string    `json:"url"`
+	Country      string    `json:"country"`
+	Region       string    `json:"region"`
+	BadPingCount int64     `json:"bad_ping_count"`
+	LastUpdate   time.Time `json:"last_update"`
 }
 
 // TODO: Lowercase indexes for faster search https://stackoverflow.com/questions/3980050/how-do-i-create-an-index-in-postgresql-based-on-lowercase-only
