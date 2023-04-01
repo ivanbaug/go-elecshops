@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivanbaug/go-eshops/internal/models"
 	"strconv"
+	"strings"
 )
 
 func GetProducts(c *gin.Context) {
@@ -124,6 +125,69 @@ func AddProduct(c *gin.Context) {
 	cols, nums, args := obtainInsertArgs(params)
 
 	query := "INSERT INTO product (" + cols + ") VALUES (" + nums + ") RETURNING *"
+
+	err = db.SQL.QueryRow(query, args...).Scan(&newProduct.ID, &newProduct.Sku, &newProduct.Description,
+		&newProduct.Vendor, &newProduct.Stock, &newProduct.Price, &newProduct.TimesClickedUpdate,
+		&newProduct.IdStore, &newProduct.LastUpdate, &newProduct.FirstUpdate, &newProduct.NumUpdates, &newProduct.Url)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, newProduct)
+}
+
+func UpsertProduct(c *gin.Context) {
+	var p models.Product
+	var newProduct models.Product
+	var params []qParam
+	var upsrtParams []string
+	err := c.BindJSON(&p)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	if p.Sku == "" || p.IdStore <= 0 {
+		c.JSON(400, gin.H{"error": "sku and id_store are required"})
+		return
+	}
+
+	params = append(params, newQParam("sku", p.Sku))
+	params = append(params, newQParam("id_store", strconv.FormatInt(p.IdStore, 10)))
+
+	if p.Description != "" {
+		params = append(params, newQParam("description", p.Description))
+		upsrtParams = append(upsrtParams, "description = EXCLUDED.description")
+
+	}
+	if p.Vendor != "" {
+		params = append(params, newQParam("vendor", p.Vendor))
+		upsrtParams = append(upsrtParams, "vendor = EXCLUDED.vendor")
+	}
+	if p.Stock > 0 {
+		params = append(params, newQParam("stock", strconv.FormatInt(p.Stock, 10)))
+		upsrtParams = append(upsrtParams, "stock = EXCLUDED.stock")
+	}
+	if p.Price > 0 {
+		params = append(params, newQParam("price", strconv.FormatFloat(p.Price, 'f', 2, 64)))
+		upsrtParams = append(upsrtParams, "price = EXCLUDED.price")
+	}
+	if p.Url != "" {
+		params = append(params, newQParam("url", p.Url))
+		upsrtParams = append(upsrtParams, "url = EXCLUDED.url")
+	}
+
+	cols, nums, args := obtainInsertArgs(params)
+	updStr := strings.Join(upsrtParams, ", ")
+
+	query := "INSERT INTO product (" + cols + ") VALUES (" + nums + ") RETURNING *"
+
+	if len(upsrtParams) > 0 {
+		query = "INSERT INTO product (" + cols + ") VALUES (" + nums + ")" +
+			" ON CONFLICT (sku,id_store) DO UPDATE SET " + updStr +
+			", last_update = CURRENT_TIMESTAMP, num_updates = product.num_updates + 1 " +
+			" RETURNING *"
+	}
 
 	err = db.SQL.QueryRow(query, args...).Scan(&newProduct.ID, &newProduct.Sku, &newProduct.Description,
 		&newProduct.Vendor, &newProduct.Stock, &newProduct.Price, &newProduct.TimesClickedUpdate,

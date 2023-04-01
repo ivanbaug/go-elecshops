@@ -21,7 +21,8 @@ CREATE TABLE "product"(
                           "last_update" TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           "first_update" TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           "num_updates" BIGINT NOT NULL DEFAULT 0,
-                          "url" varchar(255) DEFAULT ''::character varying NOT NULL
+                          "url" varchar(255) DEFAULT ''::character varying NOT NULL,
+                          unique (sku, id_store)
                       );
 ALTER TABLE
     "product" ADD PRIMARY KEY("id");

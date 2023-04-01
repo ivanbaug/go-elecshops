@@ -49,6 +49,7 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 		pgProducts := rProtected.Group("/products")
 		{
 			pgProducts.POST("/", AddProduct)
+			pgProducts.POST("/upsert/", UpsertProduct)
 			pgProducts.PATCH("/:id", UpdateProduct)
 			pgProducts.DELETE("/:id", DeleteProduct)
 		}
