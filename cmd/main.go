@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/ivanbaug/go-eshops/internal/dbdriver"
-	"github.com/ivanbaug/go-eshops/internal/routes"
+	"github.com/ivanbaug/go-elecshops/internal/dbdriver"
+	"github.com/ivanbaug/go-elecshops/internal/routes"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

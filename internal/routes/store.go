@@ -3,7 +3,7 @@ package routes
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
-	"github.com/ivanbaug/go-eshops/internal/models"
+	"github.com/ivanbaug/go-elecshops/internal/models"
 	"strconv"
 )
 
