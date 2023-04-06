@@ -1,0 +1,11 @@
+version: "3"
+services:
+  go_elects:
+    #    restart: "no"
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: go_elects
+    ports:
+      - 8081:8080
