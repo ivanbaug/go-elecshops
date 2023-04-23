@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ## Build
-FROM golang:1.20-bullseye AS build
+FROM golang:latest AS build
 #FROM golang:1.20-bullseye
 
 WORKDIR /app

@@ -25,6 +25,7 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	// Stores
 	rStores := r.Group("/stores")
 	{
+		rStores.Use(CorsMiddlewareGet())
 		rStores.GET("/", GetStores)
 		rStores.GET("/:id", GetStore)
 	}
@@ -32,6 +33,7 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	// products
 	rProducts := r.Group("/products")
 	{
+		rProducts.Use(CorsMiddlewareGet())
 		rProducts.GET("/", GetProducts)
 		rProducts.GET("/:id", GetProduct)
 	}
@@ -56,6 +58,18 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	}
 
 	return r
+}
+
+func CorsMiddlewareGet() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		//c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+		//c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		//c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		//c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		c.Next()
+	}
 }
 
 // Helper functions, types
