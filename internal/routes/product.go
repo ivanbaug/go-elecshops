@@ -74,6 +74,72 @@ func GetProducts(c *gin.Context) {
 	c.JSON(200, products)
 }
 
+func GetProductSort(c *gin.Context) {
+	var products []models.VwProduct
+	var params []qParam
+	var args []interface{}
+	var qWhere string
+
+	productSku := c.Query("sku")
+	productDescription := c.Query("description")
+	productVendor := c.Query("vendor")
+	productUrl := c.Query("url")
+	productIdStore := c.Query("id_store")
+
+	if productSku != "" {
+		p := newQParam("sku", productSku)
+		p.Precise = false
+		params = append(params, p)
+	}
+	if productDescription != "" {
+		p := newQParam("description", productDescription)
+		p.Precise = false
+		params = append(params, p)
+	}
+	if productVendor != "" {
+		p := newQParam("vendor", productVendor)
+		p.Precise = false
+		params = append(params, p)
+	}
+	if productUrl != "" {
+		p := newQParam("url", productUrl)
+		params = append(params, p)
+	}
+	if productIdStore != "" {
+		p := newQParam("id_store", productIdStore)
+		params = append(params, p)
+	}
+
+	if len(params) > 0 {
+		args, qWhere = obtainQueryArgs(params)
+	}
+
+	rows, err := db.SQL.Query("SELECT * FROM vw_product "+qWhere, args...)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+		}
+	}(rows)
+
+	for rows.Next() {
+		var p models.VwProduct
+		err := rows.Scan(&p.ID, &p.Sku, &p.Description, &p.Vendor, &p.Stock, &p.Price, &p.TimesClickedUpdate,
+			&p.IdStore, &p.LastUpdate, &p.FirstUpdate, &p.NumUpdates, &p.Url, &p.StoreName, &p.Country)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error(), "row_id": p.ID})
+			return
+		}
+		products = append(products, p)
+	}
+
+	c.JSON(200, products)
+}
+
 func GetProduct(c *gin.Context) {
 	var p models.Product
 	id := c.Param("id")

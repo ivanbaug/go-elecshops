@@ -34,7 +34,7 @@ func SetupRouter(rdb *dbdriver.DB) *gin.Engine {
 	rProducts := r.Group("/products")
 	{
 		rProducts.Use(CorsMiddlewareGet())
-		rProducts.GET("/", GetProducts)
+		rProducts.GET("/", GetProductSort)
 		rProducts.GET("/:id", GetProduct)
 	}
 
