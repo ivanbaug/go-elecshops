@@ -43,6 +43,3 @@ type VwProduct struct {
 	StoreName          string    `json:"store_name"`
 	Country            string    `json:"country"`
 }
-
-// TODO: Lowercase indexes for faster search https://stackoverflow.com/questions/3980050/how-do-i-create-an-index-in-postgresql-based-on-lowercase-only
-// TODO: probably a view with all the info

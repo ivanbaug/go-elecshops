@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
 	"github.com/ivanbaug/go-elecshops/internal/models"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -76,45 +77,85 @@ func GetProducts(c *gin.Context) {
 
 func GetProductSort(c *gin.Context) {
 	var products []models.VwProduct
-	var params []qParam
 	var args []interface{}
 	var qWhere string
+	var qInStock string
+	var qOrder string
 
-	productSku := c.Query("sku")
-	productDescription := c.Query("description")
-	productVendor := c.Query("vendor")
-	productUrl := c.Query("url")
-	productIdStore := c.Query("id_store")
+	productQuery := c.Query("query")
+	productInStock := c.Query("instock")
+	productOrderBy := c.Query("order_by")
+	productSort := c.Query("sort")
+	pageNumber := c.Query("page")
+	perPage := c.Query("per_page")
 
-	if productSku != "" {
-		p := newQParam("sku", productSku)
-		p.Precise = false
-		params = append(params, p)
-	}
-	if productDescription != "" {
-		p := newQParam("description", productDescription)
-		p.Precise = false
-		params = append(params, p)
-	}
-	if productVendor != "" {
-		p := newQParam("vendor", productVendor)
-		p.Precise = false
-		params = append(params, p)
-	}
-	if productUrl != "" {
-		p := newQParam("url", productUrl)
-		params = append(params, p)
-	}
-	if productIdStore != "" {
-		p := newQParam("id_store", productIdStore)
-		params = append(params, p)
+	argIdx := 1
+	if productQuery != "" {
+		qWhere = " WHERE (LOWER(sku) LIKE LOWER('%' || $" + strconv.Itoa(argIdx) + " || '%') " +
+			"OR LOWER(description) LIKE LOWER('%' || $" + strconv.Itoa(argIdx) + " || '%')) "
+		args = append(args, productQuery)
+		argIdx++
 	}
 
-	if len(params) > 0 {
-		args, qWhere = obtainQueryArgs(params)
+	if productInStock == "true" {
+		if qWhere == "" {
+			qInStock = " WHERE stock > 0 "
+		} else {
+			qInStock = " AND stock > 0 "
+		}
 	}
 
-	rows, err := db.SQL.Query("SELECT * FROM vw_product "+qWhere, args...)
+	// Get total number of products
+	countRows, err := db.SQL.Query("SELECT count(1) FROM vw_product "+qWhere+qInStock, args...)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	defer func(countRows *sql.Rows) {
+		err := countRows.Close()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+		}
+	}(countRows)
+
+	var totalItems = 0
+	for countRows.Next() {
+		err := countRows.Scan(&totalItems)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// Query order and sort
+	if strings.ToLower(productSort) == "desc" {
+		productSort = "desc"
+	} else {
+		productSort = "asc"
+	}
+
+	productOrderBy = strings.ToLower(strings.TrimSpace(productOrderBy))
+
+	if isValidProductColumn(productOrderBy) {
+		qOrder = " ORDER BY " + productOrderBy + " " + productSort + " "
+	} else {
+		qOrder = " ORDER BY last_update " + productSort + " "
+	}
+
+	// Pagination
+	pageInt, err := strconv.Atoi(pageNumber)
+	if err != nil || pageInt < 1 {
+		pageInt = 1
+	}
+
+	perPageInt, err := strconv.Atoi(perPage)
+	if err != nil || perPageInt > 50 || perPageInt < 1 {
+		perPageInt = 50
+	}
+	pagination := " LIMIT " + strconv.Itoa(perPageInt) + " OFFSET " + strconv.Itoa((pageInt-1)*perPageInt) + " "
+
+	// Run query
+	rows, err := db.SQL.Query("SELECT * FROM vw_product "+qWhere+qInStock+qOrder+pagination, args...)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -137,7 +178,29 @@ func GetProductSort(c *gin.Context) {
 		products = append(products, p)
 	}
 
-	c.JSON(200, products)
+	// Build response
+	res := map[string]interface{}{
+		"data":     products,
+		"page":     pageInt,
+		"per_page": perPageInt,
+		"page_qty": math.Ceil(float64(totalItems) / float64(perPageInt)),
+		"total":    totalItems,
+	}
+	c.JSON(200, res)
+}
+
+func isValidProductColumn(category string) bool {
+	switch category {
+	case
+		"sku",
+		"description",
+		"vendor",
+		"stock",
+		"price",
+		"last_update":
+		return true
+	}
+	return false
 }
 
 func GetProduct(c *gin.Context) {

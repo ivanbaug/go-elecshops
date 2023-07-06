@@ -82,11 +82,11 @@ func obtainQueryArgs(params []qParam) ([]interface{}, string) {
 	var args []interface{}
 	var strs []string
 	for i, p := range params {
-		args = append(args, p.Value)
+		args = append(args, strings.ToLower(p.Value))
 		if p.Precise {
-			strs = append(strs, p.Name+" = $"+strconv.Itoa(i+1))
+			strs = append(strs, " LOWER("+p.Name+") = $"+strconv.Itoa(i+1))
 		} else {
-			strs = append(strs, p.Name+" LIKE '%' || $"+strconv.Itoa(i+1)+" || '%'")
+			strs = append(strs, " LOWER("+p.Name+") LIKE '%' || $"+strconv.Itoa(i+1)+" || '%'")
 		}
 	}
 
