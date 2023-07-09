@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ## Build
-FROM golang:latest AS build
+FROM golang:1.20 AS build
 #FROM golang:1.20-bullseye
 
 WORKDIR /app
@@ -13,7 +13,7 @@ COPY ./internal ./internal
 
 RUN go mod download
 
-RUN go build -o /go-elecsh cmd/main.go
+RUN CGO_ENABLED=0 go build -o /go-elecsh cmd/main.go
 
 ## Deploy
 FROM gcr.io/distroless/base-debian11
