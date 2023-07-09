@@ -8,4 +8,4 @@ services:
       dockerfile: Dockerfile
     image: go_elects
     ports:
-      - 8081:8080
+      - 5200:8080
